@@ -1,0 +1,35 @@
+# Validation rules. Written against the CLEANED, snake_cased output of the
+# pipeline (cleaned.csv), not the raw file. Run with:
+#   python cli.py validate cleaned.csv --rules rules.yaml --report validation.md
+# A failing report exits non-zero, so this drops straight into CI.
+
+columns:
+  customer_id:
+    not_null: true      # every row must have an id
+    unique: true        # ids must not repeat after de-duplication
+    dtype: integer
+
+  full_name:
+    not_null: true
+
+  email_address:
+    # Basic address shape. Malformed rows (missing '@') are flagged.
+    regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+
+  age:
+    range:
+      min: 18
+      max: 120
+
+  is_active:
+    allowed: ["True", "False"]
+
+  country:
+    allowed: [Panama, Colombia, Mexico, Costa Rica, USA, Ecuador]
+
+# Cross-field checks compare two columns (or a column and a literal).
+checks:
+  - name: signup_not_after_last_login
+    left: signup_date
+    op: "<="
+    right: last_login

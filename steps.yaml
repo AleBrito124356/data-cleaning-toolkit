@@ -1,0 +1,52 @@
+# A declarative cleaning pipeline for data/messy_sample.csv.
+# Run it with:
+#   python cli.py run-pipeline data/messy_sample.csv --steps steps.yaml \
+#       --out cleaned.csv --report run_report.md --audit audit.json
+#
+# Steps run top to bottom. Every step is logged; the run is reproducible
+# (same input + same steps => same output hash).
+
+name: customers
+
+steps:
+  # 1. Headers like "Customer ID" and "Balance (USD)" -> snake_case.
+  - op: standardize_column_names
+
+  # 2. Trim, collapse repeated spaces, and NFKC-normalise unicode.
+  - op: normalize_whitespace
+
+  # 3. Parse the raw strings into real types. Dates auto-detect day-first.
+  - op: coerce_types
+    mapping:
+      customer_id: integer
+      signup_date: datetime
+      last_login: datetime
+      balance_usd: float
+      is_active: boolean
+      age: integer
+
+  # 4. Collapse country spelling variants onto a canonical set. Values that
+  #    are not close enough (USA, Ecuador) are left untouched and reported.
+  - op: standardize_categoricals
+    column: country
+    canonical: [Panama, Colombia, Mexico, Costa Rica]
+    threshold: 0.7
+    extra_aliases:
+      "Rep. de Panama": Panama
+
+  # 5. Fill missing ages with the column median.
+  - op: handle_missing
+    strategy: fill
+    columns: [age]
+    value: median
+
+  # 6. Cap absurd ages (150, 200) to the IQR fence instead of dropping rows.
+  - op: handle_outliers
+    columns: [age]
+    method: iqr
+    action: cap
+
+  # 7. Drop rows that repeat the same customer_id, keeping the first.
+  - op: deduplicate
+    subset: [customer_id]
+    keep: first
