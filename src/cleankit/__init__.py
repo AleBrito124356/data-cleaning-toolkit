@@ -20,6 +20,8 @@ Pipeline:
 Contacts:
     standardize_email, to_e164, standardize_name, clean_address,
     region_for_country
+Configuration:
+    load_env_file
 """
 
 from __future__ import annotations
@@ -49,6 +51,7 @@ from .contacts import (
     region_for_country,
 )
 from .suggest import Suggestion, suggest
+from .config import load_env_file
 
 __version__ = "0.2.0"
 
@@ -85,4 +88,6 @@ __all__ = [
     "standardize_name",
     "clean_address",
     "region_for_country",
+    # config
+    "load_env_file",
 ]

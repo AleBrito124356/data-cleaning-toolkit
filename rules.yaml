@@ -1,7 +1,7 @@
 # Validation rules. Written against the CLEANED, snake_cased output of the
 # pipeline (cleaned.csv), not the raw file. Run with:
 #   python cli.py validate cleaned.csv --rules rules.yaml --report validation.md
-# A failing report exits non-zero, so this drops straight into CI.
+# A failing report exits 1, so this drops straight into CI.
 
 columns:
   customer_id:
@@ -10,13 +10,18 @@ columns:
     dtype: integer
 
   full_name:
-    not_null: true
+    not_null: true      # whitespace-only names count as null
 
   email_address:
     # Basic address shape. Malformed rows (missing '@') are flagged.
     regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
 
+  phone:
+    # E.164 after standardize_phones: '+', country code, national number.
+    regex: '^\+[1-9]\d{6,14}(;ext=\d+)?$'
+
   age:
+    dtype: integer
     range:
       min: 18
       max: 120
@@ -27,7 +32,8 @@ columns:
   country:
     allowed: [Panama, Colombia, Mexico, Costa Rica, USA, Ecuador]
 
-# Cross-field checks compare two columns (or a column and a literal).
+# Cross-field checks compare two columns (or a column and a literal). Dates
+# are compared as dates (ISO-safe), numbers as numbers.
 checks:
   - name: signup_not_after_last_login
     left: signup_date
