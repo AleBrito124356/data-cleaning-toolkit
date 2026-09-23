@@ -3,8 +3,11 @@
 #   python cli.py run-pipeline data/messy_sample.csv --steps steps.yaml \
 #       --out cleaned.csv --report run_report.md --audit audit.json
 #
-# Steps run top to bottom. Every step is logged; the run is reproducible
-# (same input + same steps => same output hash).
+# Steps run top to bottom and are checked before anything runs (unknown ops,
+# misspelled parameters and invalid option values are rejected). Every step
+# is logged; the run is reproducible (same input + same steps => same output
+# hash). `python cli.py suggest data/messy_sample.csv` generates a starting
+# point like this one from the profile.
 
 name: customers
 
@@ -12,10 +15,21 @@ steps:
   # 1. Headers like "Customer ID" and "Balance (USD)" -> snake_case.
   - op: standardize_column_names
 
-  # 2. Trim, collapse repeated spaces, and NFKC-normalise unicode.
+  # 2. Trim, collapse repeated spaces, NFKC-normalise unicode. Cells that are
+  #    only whitespace (customers 1008 and 1014 have "   " as a name) become
+  #    null, so a not_null rule can catch them.
   - op: normalize_whitespace
 
-  # 3. Parse the raw strings into real types. Dates auto-detect day-first.
+  # 3. Drop records with no way to contact the customer at all (1008 is an
+  #    id and nothing else). Dropped rows are listed in the audit log.
+  - op: handle_missing
+    strategy: drop_rows
+    columns: [full_name, email_address, phone]
+    how: all
+
+  # 4. Parse the raw strings into real types. Dates are parsed per value
+  #    (ISO stays year-month-day, 13/02/2023 is detected as day-first);
+  #    '1.000' next to '2.500,50' is read as one thousand, and the log says so.
   - op: coerce_types
     mapping:
       customer_id: integer
@@ -25,7 +39,7 @@ steps:
       is_active: boolean
       age: integer
 
-  # 4. Collapse country spelling variants onto a canonical set. Values that
+  # 5. Collapse country spelling variants onto a canonical set. Values that
   #    are not close enough (USA, Ecuador) are left untouched and reported.
   - op: standardize_categoricals
     column: country
@@ -34,19 +48,41 @@ steps:
     extra_aliases:
       "Rep. de Panama": Panama
 
-  # 5. Fill missing ages with the column median.
+  # 6. Contact data: names in title case, emails lower-cased with provider
+  #    typos repaired (gmial.com, yahoo.con), phones in E.164 using each
+  #    row's country (3105551234 in a Colombia row is +573105551234), and
+  #    street abbreviations expanded (Ave -> Avenida, Cra -> Carrera).
+  - op: standardize_names
+    columns: [full_name]
+
+  - op: standardize_emails
+    columns: [email_address]
+    invalid: keep
+
+  - op: standardize_phones
+    columns: [phone]
+    default_region: PA
+    region_column: country
+
+  - op: clean_addresses
+    columns: [address]
+
+  # 7. Fill missing ages with the column median. Age is an integer column, so
+  #    a fractional median would be rounded (and logged), never crash.
   - op: handle_missing
     strategy: fill
     columns: [age]
     value: median
 
-  # 6. Cap absurd ages (150, 200) to the IQR fence instead of dropping rows.
+  # 8. Cap absurd ages (150, 200) to the IQR fence instead of dropping rows.
+  #    The column stays an integer column.
   - op: handle_outliers
     columns: [age]
     method: iqr
     action: cap
 
-  # 7. Drop rows that repeat the same customer_id, keeping the first.
+  # 9. One row per customer_id: keep the most complete version of each
+  #    repeated id; the log pairs every removed row with the row it kept.
   - op: deduplicate
     subset: [customer_id]
-    keep: first
+    keep: most_complete

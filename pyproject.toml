@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cleankit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Profile, clean, validate and run reproducible, audited cleaning pipelines on messy CSVs."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "pandas>=2.0",
+    "pandas>=2.1",
     "numpy>=1.23",
     "PyYAML>=6.0",
 ]
