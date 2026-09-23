@@ -8,6 +8,8 @@ Public API
 ----------
 Profiling:
     profile_dataframe, ProfileReport, ColumnProfile
+Suggestions:
+    suggest, Suggestion
 Cleaning:
     Cleaner, to_snake_case, snake_case_columns, parse_number,
     parse_number_column, parse_boolean, parse_dates
@@ -46,6 +48,7 @@ from .contacts import (
     clean_address,
     region_for_country,
 )
+from .suggest import Suggestion, suggest
 
 __version__ = "0.2.0"
 
@@ -55,6 +58,9 @@ __all__ = [
     "ProfileReport",
     "ColumnProfile",
     "profile_dataframe",
+    # suggest
+    "Suggestion",
+    "suggest",
     # clean
     "Cleaner",
     "to_snake_case",
