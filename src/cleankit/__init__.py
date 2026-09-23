@@ -1,42 +1,53 @@
 """cleankit — the unglamorous 80% of data work, done well.
 
 A small, dependency-light pandas toolkit for profiling messy CSVs,
-standardizing types and categories, deduplicating, validating against a
-rules file, and running reproducible, audited cleaning pipelines.
+standardizing types, categories and contact data, deduplicating, validating
+against a rules file, and running reproducible, audited cleaning pipelines.
 
 Public API
 ----------
 Profiling:
-    profile_dataframe, ProfileReport
+    profile_dataframe, ProfileReport, ColumnProfile
 Cleaning:
-    Cleaner
+    Cleaner, to_snake_case, snake_case_columns, parse_number,
+    parse_number_column, parse_boolean, parse_dates
 Validation:
-    validate, load_rules, ValidationReport
+    validate, load_rules, ValidationReport, ValidationFailure
 Pipeline:
-    run_pipeline, load_pipeline, PipelineResult
+    run_pipeline, load_pipeline, validate_steps, PipelineResult
 Contacts:
-    standardize_email, to_e164, standardize_name, clean_address
+    standardize_email, to_e164, standardize_name, clean_address,
+    region_for_country
 """
 
 from __future__ import annotations
 
 from .profile import ProfileReport, ColumnProfile, profile_dataframe
-from .clean import Cleaner, to_snake_case, parse_number, parse_boolean
+from .clean import (
+    Cleaner,
+    parse_boolean,
+    parse_number,
+    parse_number_column,
+    snake_case_columns,
+    to_snake_case,
+)
+from .dates import parse_dates
 from .validate import (
     ValidationReport,
     ValidationFailure,
     load_rules,
     validate,
 )
-from .pipeline import PipelineResult, load_pipeline, run_pipeline
+from .pipeline import PipelineResult, load_pipeline, run_pipeline, validate_steps
 from .contacts import (
     standardize_email,
     to_e164,
     standardize_name,
     clean_address,
+    region_for_country,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "__version__",
@@ -47,8 +58,11 @@ __all__ = [
     # clean
     "Cleaner",
     "to_snake_case",
+    "snake_case_columns",
     "parse_number",
+    "parse_number_column",
     "parse_boolean",
+    "parse_dates",
     # validate
     "ValidationReport",
     "ValidationFailure",
@@ -58,9 +72,11 @@ __all__ = [
     "PipelineResult",
     "load_pipeline",
     "run_pipeline",
+    "validate_steps",
     # contacts
     "standardize_email",
     "to_e164",
     "standardize_name",
     "clean_address",
+    "region_for_country",
 ]
